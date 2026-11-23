@@ -49,6 +49,19 @@ task :export, [:slug] do |_t, args|
   sh(*cmd)
 end
 
+desc "Build static gallery site into _site/ (uses cached exports)"
+task :site do
+  sh(File.join(Studio::ROOT, "bin", "build-site"), "--prune")
+end
+
+namespace :site do
+  desc "Remove generated _site/ directory"
+  task :clean do
+    FileUtils.rm_rf(Studio::SITE_DIR)
+    puts "Removed _site/"
+  end
+end
+
 namespace :media do
   desc "Convert a recording to MP4 via ffmpeg: rake 'media:mp4[path/to/clip.webm]'"
   task :mp4, [:input] do |_t, args|

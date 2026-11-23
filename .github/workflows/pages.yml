@@ -1,0 +1,62 @@
+name: Deploy Gallery to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version-file: .ruby-version
+          bundler-cache: true
+
+      - name: Restore cached sketch exports
+        uses: actions/cache@v4
+        with:
+          path: exports
+          key: asobi-exports-${{ hashFiles('Gemfile.lock', 'lib/**/*.rb', 'sketches/**', 'assets/**') }}
+          restore-keys: |
+            asobi-exports-
+
+      - name: Export sketches (cached per sketch)
+        run: bundle exec bin/export --prune
+
+      - name: Build static gallery site
+        run: bundle exec bin/build-site --skip-export
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

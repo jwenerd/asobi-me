@@ -4,14 +4,20 @@
 require "optparse"
 require_relative "../lib/studio"
 
-options = { at: nil, svg_still: true }
+options = { at: nil, svg_still: true, force: false, prune: false }
 parser = OptionParser.new do |o|
-  o.banner = "Usage: bin/export [slug-or-path ...] [--at SECONDS] [--no-svg]"
+  o.banner = "Usage: bin/export [slug-or-path ...] [--at SECONDS] [--no-svg] [--force] [--prune]"
   o.on("--at SECONDS", Float, "Export an SVG keyframe of motions at SECONDS (default: 0)") do |s|
     options[:at] = s
   end
   o.on("--no-svg", "Skip SVG keyframe export for motion sketches") do
     options[:svg_still] = false
+  end
+  o.on("-f", "--force", "Re-render sketches even when cached outputs match") do
+    options[:force] = true
+  end
+  o.on("--prune", "Remove stale exports/<slug>/ directories for deleted sketches") do
+    options[:prune] = true
   end
   o.on("-h", "--help", "Show help") do
     puts o
@@ -21,9 +27,11 @@ end
 
 parser.parse!(ARGV)
 
+all_sketches = Dir.glob(File.join(Studio::SKETCHES_DIR, "*", "sketch.rb")).sort
+
 targets =
   if ARGV.empty?
-    Dir.glob(File.join(Studio::SKETCHES_DIR, "*", "sketch.rb")).sort
+    all_sketches
   else
     ARGV.map do |arg|
       if File.file?(arg)
@@ -36,14 +44,26 @@ targets =
     end
   end
 
+if options[:prune]
+  valid_slugs = all_sketches.map { |p| Studio::Exporter.slug_for(p) }
+  removed = Studio::Exporter.prune!(valid_slugs:)
+  removed.each { |slug| puts "[prune] removed stale exports/#{slug}/" }
+end
+
 if targets.empty?
   puts "No sketches found in sketches/."
   exit 0
 end
 
 targets.each do |sketch_path|
-  result = Studio::Exporter.export(sketch_path, at: options[:at], svg_still: options[:svg_still])
-  puts "[#{result.slug}]"
+  result = Studio::Exporter.export(
+    sketch_path,
+    at: options[:at],
+    svg_still: options[:svg_still],
+    force: options[:force]
+  )
+  status = result.cached ? " (cached)" : ""
+  puts "[#{result.slug}]#{status}"
   result.outputs.each do |out|
     rel = out.sub("#{Studio::ROOT}/", "")
     size_kb = (File.size(out) / 1024.0).round(1)

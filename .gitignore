@@ -6,9 +6,10 @@
 /vendor/bundle/
 *.gem
 
-# Generated exports (keep folder structure)
+# Generated exports & static gallery site (keep exports folder structure)
 /exports/*
 !/exports/.gitkeep
+/_site/
 
 # Temporary recordings & Scratch files
 *.webm

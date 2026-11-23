@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>asobi-me — Creative Coding Gallery</title>
+  <link rel="stylesheet" href="./assets/style.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="site-header">
+      <div>
+        <h1>asobi-me</h1>
+        <p class="site-tagline">Generative SVG art, Ruby Object-to-Art visuals, and looping animations built with asobi.</p>
+      </div>
+      <div class="site-meta"><%= entries.size %> sketch<%= entries.size == 1 ? "" : "es" %> · newest first</div>
+    </header>
+
+    <% if categories.size > 1 -%>
+    <nav class="filter-bar" aria-label="Filter sketches by category">
+      <button type="button" class="filter-pill" data-filter="all" aria-pressed="true">All (<%= entries.size %>)</button>
+      <% categories.each do |cat| -%>
+      <button type="button" class="filter-pill" data-filter="<%= h(cat) %>" aria-pressed="false"><%= h(cat.capitalize) %></button>
+      <% end -%>
+    </nav>
+    <% end -%>
+
+    <main class="gallery-grid" id="gallery">
+      <% entries.each do |entry| -%>
+      <article class="card" data-category="<%= h(entry.category) %>">
+        <% if entry.has_svg -%>
+        <img
+          class="card-thumb"
+          src="./sketches/<%= h(entry.slug) %>/preview.svg"
+          alt="Preview frame of <%= h(entry.title) %>"
+          loading="lazy"
+          decoding="async"
+        >
+        <% else -%>
+        <div class="card-thumb-fallback" aria-hidden="true"><%= h(entry.slug) %></div>
+        <% end -%>
+
+        <header>
+          <div class="badges">
+            <span class="badge badge--<%= h(entry.category) %>"><%= h(entry.category) %></span>
+            <span class="badge"><%= h(entry.kind_label) %></span>
+          </div>
+          <h2>
+            <a class="card-link" href="./sketches/<%= h(entry.slug) %>/"><%= h(entry.title) %></a>
+          </h2>
+        </header>
+
+        <p class="card-concept"><%= h(entry.concept.empty? ? "Interactive Ruby sketch powered by asobi." : entry.concept) %></p>
+
+        <footer>
+          <span><%= h(entry.slug) %></span>
+          <span><%= h(entry.created || entry.status || "Studio") %></span>
+        </footer>
+      </article>
+      <% end -%>
+    </main>
+
+    <footer class="site-footer">
+      <span>Built automatically from <code>sketches/</code> with <code>asobi</code>.</span>
+      <span>Updated <%= h(built_at) %></span>
+    </footer>
+  </div>
+
+  <% if categories.size > 1 -%>
+  <script>
+    (() => {
+      const buttons = document.querySelectorAll(".filter-pill");
+      const cards = document.querySelectorAll("#gallery > .card");
+
+      buttons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const filter = btn.dataset.filter;
+          buttons.forEach((b) => b.setAttribute("aria-pressed", String(b === btn)));
+          cards.forEach((card) => {
+            card.hidden = filter !== "all" && card.dataset.category !== filter;
+          });
+        });
+      });
+    })();
+  </script>
+  <% end -%>
+</body>
+</html>

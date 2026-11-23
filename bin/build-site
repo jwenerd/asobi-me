@@ -1,0 +1,56 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "optparse"
+require_relative "../lib/studio"
+
+options = {
+  out_dir: Studio::SITE_DIR,
+  skip_export: false,
+  force: false,
+  prune: false
+}
+
+parser = OptionParser.new do |o|
+  o.banner = "Usage: bin/build-site [--out DIR] [--skip-export] [--force] [--prune]"
+  o.on("-o", "--out DIR", "Output directory for generated site (default: _site)") do |dir|
+    options[:out_dir] = File.expand_path(dir)
+  end
+  o.on("--skip-export", "Skip running cached exports before building the site") do
+    options[:skip_export] = true
+  end
+  o.on("-f", "--force", "Force re-exporting all sketches before building") do
+    options[:force] = true
+  end
+  o.on("--prune", "Prune stale exports/<slug>/ directories during export") do
+    options[:prune] = true
+  end
+  o.on("-h", "--help", "Show help") do
+    puts o
+    exit 0
+  end
+end
+
+parser.parse!(ARGV)
+
+unless options[:skip_export]
+  sketch_paths = Dir.glob(File.join(Studio::SKETCHES_DIR, "*", "sketch.rb")).sort
+  if options[:prune]
+    valid_slugs = sketch_paths.map { |p| Studio::Exporter.slug_for(p) }
+    removed = Studio::Exporter.prune!(valid_slugs:)
+    removed.each { |slug| puts "[prune] removed stale exports/#{slug}/" }
+  end
+
+  sketch_paths.each do |sketch_path|
+    result = Studio::Exporter.export(sketch_path, force: options[:force])
+    status = result.cached ? " (cached)" : ""
+    puts "[export] #{result.slug}#{status}"
+  end
+end
+
+build = Studio::SiteBuilder.build(out_dir: options[:out_dir])
+rel_out = build.out_dir.sub("#{Studio::ROOT}/", "")
+puts "[site] built #{build.entries.size} sketch(es) -> #{rel_out}/"
+build.entries.each do |entry|
+  puts "  - #{entry.slug} (#{entry.category}, #{entry.kind_label})"
+end

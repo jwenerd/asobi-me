@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title><%= h(entry.title) %> — asobi-me</title>
+  <link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="viewer-topbar">
+      <div class="viewer-title-group">
+        <a class="back-link" href="../../">← All sketches</a>
+        <h1><%= h(entry.title) %></h1>
+        <div class="badges">
+          <span class="badge badge--<%= h(entry.category) %>"><%= h(entry.category) %></span>
+          <span class="badge"><%= h(entry.kind_label) %></span>
+          <% if entry.canvas_width && entry.canvas_height -%>
+          <span class="badge"><%= entry.canvas_width %>×<%= entry.canvas_height %></span>
+          <% end -%>
+          <% if entry.created -%>
+          <span class="badge"><%= h(entry.created) %></span>
+          <% end -%>
+        </div>
+      </div>
+
+      <div class="viewer-actions">
+        <% if entry.has_html -%>
+        <button type="button" class="btn btn--primary" id="fullscreen-btn">Fullscreen</button>
+        <a class="btn" href="./art.html" target="_blank" rel="noopener">Open standalone ↗</a>
+        <% end -%>
+        <% if entry.has_svg -%>
+        <a class="btn" href="./preview.svg" target="_blank" rel="noopener">SVG still ↗</a>
+        <% end -%>
+      </div>
+    </header>
+
+    <main>
+      <div class="stage-wrap">
+        <% if entry.has_html -%>
+        <iframe
+          id="art-stage"
+          class="stage-frame<%= entry.portrait? ? " stage-frame--portrait" : "" %>"
+          style="--stage-aspect: <%= h(entry.aspect_ratio_css) %>;"
+          src="./art.html"
+          title="<%= h(entry.title) %> interactive animation"
+          allow="fullscreen; autoplay"
+          allowfullscreen
+        ></iframe>
+        <% else -%>
+        <img
+          id="art-stage"
+          class="stage-svg"
+          src="./preview.svg"
+          alt="<%= h(entry.title) %>"
+        >
+        <% end -%>
+      </div>
+
+      <% unless entry.concept.empty? -%>
+      <p class="viewer-concept"><%= h(entry.concept) %></p>
+      <% end -%>
+
+      <section class="accordion" aria-label="Sketch source and specification">
+        <details>
+          <summary>Source code — sketches/<%= h(entry.slug) %>/sketch.rb</summary>
+          <div class="panel-body">
+            <pre class="code-block"><code><%= h(entry.source_code) %></code></pre>
+          </div>
+        </details>
+
+        <% unless entry.spec_markdown.empty? -%>
+        <details>
+          <summary>Creative spec — sketches/<%= h(entry.slug) %>/SPEC.md</summary>
+          <div class="panel-body">
+            <pre class="spec-block"><%= h(entry.spec_markdown) %></pre>
+          </div>
+        </details>
+        <% end -%>
+      </section>
+
+      <% if prev_entry || next_entry -%>
+      <nav class="viewer-nav" aria-label="Adjacent sketches">
+        <div>
+          <% if prev_entry -%>
+          <a href="../<%= h(prev_entry.slug) %>/">← Newer: <%= h(prev_entry.title) %></a>
+          <% end -%>
+        </div>
+        <div>
+          <% if next_entry -%>
+          <a href="../<%= h(next_entry.slug) %>/">Older: <%= h(next_entry.title) %> →</a>
+          <% end -%>
+        </div>
+      </nav>
+      <% end -%>
+    </main>
+
+    <footer class="site-footer">
+      <span>Slug: <code><%= h(entry.slug) %></code></span>
+      <span>Updated <%= h(built_at) %></span>
+    </footer>
+  </div>
+
+  <% if entry.has_html -%>
+  <script>
+    (() => {
+      const btn = document.getElementById("fullscreen-btn");
+      const stage = document.getElementById("art-stage");
+      if (!btn || !stage) return;
+
+      btn.addEventListener("click", () => {
+        if (stage.requestFullscreen) {
+          stage.requestFullscreen();
+        } else if (stage.webkitRequestFullscreen) {
+          stage.webkitRequestFullscreen();
+        }
+      });
+    })();
+  </script>
+  <% end -%>
+</body>
+</html>

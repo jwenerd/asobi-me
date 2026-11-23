@@ -17,37 +17,44 @@ This workspace is a spec-driven creative coding studio built on the [`asobi`](ht
 
 ```text
 asobi-me/
+├── .github/
+│   └── workflows/
+│       └── pages.yml          # GitHub Pages deploy on push to main (with export cache)
 ├── .ruby-version              # Pinned Ruby version (3.4.1)
-├── Gemfile / Gemfile.lock     # Bundled dependencies (asobi, rake)
+├── Gemfile / Gemfile.lock     # Bundled dependencies (asobi, rake; macOS + x86_64-linux)
 ├── PROJECT_SPEC.md            # This studio specification
 ├── AGENTS.md                  # AI coding agent workspace instructions
 ├── README.md                  # Quick-start commands & cheat sheet
-├── Rakefile                   # Task wrappers (new, live, export, media)
+├── Rakefile                   # Task wrappers (new, live, export, site, media)
 ├── .agents/skills/asobi/      # Official asobi SKILL.md (78-word API + gotchas)
 ├── bin/
 │   ├── setup                  # Verify Ruby + install gems
 │   ├── new-sketch             # Scaffold sketches/<slug>/ (SPEC.md + sketch.rb)
 │   ├── live                   # Start live-reloading browser preview
-│   ├── export                 # Headless SVG / standalone HTML exporter
+│   ├── export                 # Headless SVG / standalone HTML exporter (per-sketch cached)
+│   ├── build-site             # Static gallery site builder -> _site/
 │   └── convert-video          # ffmpeg WebM -> MP4 / GIF helper
 ├── lib/
-│   ├── studio.rb              # Shared loader for sketches
+│   ├── studio.rb              # Shared loader for sketches & studio tools
 │   └── studio/
 │       ├── palettes.rb        # Reusable color palettes
-│       └── exporter.rb        # Headless Asobi::Sketch evaluator & exporter
+│       ├── exporter.rb        # Headless Asobi::Sketch evaluator & SHA256-cached exporter
+│       └── site_builder.rb    # Static gallery + viewer page generator
 ├── templates/
 │   ├── SPEC.md.erb            # Per-project creative spec template
-│   └── sketch.rb.erb          # Starter templates (generative/object/interactive)
+│   ├── sketch.rb.erb          # Starter templates (generative/object/interactive)
+│   └── site/                  # Gallery index, sketch viewer shell & CSS templates
 ├── sketches/
 │   └── <slug>/
-│       ├── SPEC.md            # Creative brief, visual rules, export targets
+│       ├── SPEC.md            # Creative brief, visual rules, gallery card metadata
 │       ├── sketch.rb          # Self-contained asobi sketch ending with `show`
 │       └── *.mp3 / *.wav      # Optional local audio for `play "track.mp3"`
 ├── assets/
 │   ├── audio/                 # Shared audio library (copy or symlink into sketch folder)
 │   └── data/                  # Datasets (CSV/JSON/Ruby) for Object-to-Art visuals
-└── exports/
-    └── <slug>/                # Generated .svg, .html, .mp4, .gif outputs (gitignored)
+├── exports/
+│   └── <slug>/                # Cached .svg, .html, .export-meta.json outputs (gitignored)
+└── _site/                     # Generated static GitHub Pages gallery (gitignored)
 ```
 
 ---
@@ -57,10 +64,12 @@ asobi-me/
 1. **Spec** — Run `bin/new-sketch <slug> [--type generative|object|interactive]` (or `bundle exec rake "new[<slug>,<type>]"`). Fill out `sketches/<slug>/SPEC.md` with the concept, mood/palette, motion/reactivity rules, and target outputs.
 2. **Live Code** — Run `bin/live <slug>`. Save edits to `sketches/<slug>/sketch.rb` to see instant updates in the browser without resetting motion phase or restarting audio.
 3. **Extract Reusable Objects** — When a visual primitive or domain model proves reusable across sketches, move it into `lib/studio/<module>.rb` using `include Asobi::Art` and `def to_art`.
-4. **Export** — Run `bin/export <slug>` (or `bin/export` for all sketches) to produce:
+4. **Export (Cached)** — Run `bin/export <slug>` (or `bin/export` for all sketches) to produce:
    - `.svg` for static art (and keyframe `.svg` snapshots of motions via `--at <seconds>`),
    - standalone `.html` for looping/interactive/audio-carrying motions.
-5. **Record & Convert Video** — Press **`R`** in the live browser preview to record video (`.webm`), then run `bin/convert-video recording.webm --mp4 --gif` to produce shareable clips under `exports/`.
+   - Unchanged sketches are skipped automatically via per-sketch `SHA256` digests in `exports/<slug>/.export-meta.json` (use `--force` to re-render or `--prune` to remove exports for deleted sketches).
+5. **Build & Publish Gallery** — Run `bin/build-site` (or `bundle exec rake site`) to assemble the newest-first static gallery in `_site/`. Pushing to `main` runs `.github/workflows/pages.yml`, which restores cached `exports/`, renders only changed sketches, builds `_site/`, and deploys to GitHub Pages automatically.
+6. **Record & Convert Video** — Press **`R`** in the live browser preview to record video (`.webm`), then run `bin/convert-video recording.webm --mp4 --gif` to produce shareable clips under `exports/`.
 
 ---
 
@@ -83,6 +92,8 @@ asobi-me/
   - Use `controls: false` in `show` for clean projection/VJ views (`f` = fullscreen, `m` = mute, `r` = record).
 - **Determinism**:
   - Pass explicit `seed:` arguments to `.scattered(over: ..., seed: 42)` so exports and re-renders are reproducible.
+- **Gallery Metadata (`SPEC.md`)**:
+  - `Studio::SiteBuilder` reads `# Title`, `Category`, `Created`, `Status`, `Canvas / Paper` (`[w, h]`), and the first paragraph under `## Concept` from each sketch's `SPEC.md` to build the newest-first gallery cards and viewer framing. Keep those fields accurate when creating or updating a sketch.
 
 ---
 
