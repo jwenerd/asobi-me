@@ -2,7 +2,7 @@
 
 source "https://rubygems.org"
 
-ruby file: ".ruby-version"
+ruby "~> 3.4.0"
 
 gem "asobi", "~> 0.2.1"
 gem "rake", "~> 13.2"
