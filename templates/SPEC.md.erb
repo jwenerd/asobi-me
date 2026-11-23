@@ -1,0 +1,29 @@
+# <%= title %>
+
+- **Slug**: `<%= slug %>`
+- **Category**: `<%= type %>`
+- **Created**: <%= date %>
+- **Status**: Draft
+
+## Concept
+Describe the visual idea, story, or system behind this piece.
+
+## Visual Direction
+- **Palette**: `Studio::Palettes::MIDNIGHT_NEON` (or custom colors)
+- **Background**: `Studio::Palettes.bg(:night)` (`#070812`)
+- **Canvas / Paper**: e.g. `[360, 360]` or `[360, 200]`
+- **Texture / Effects**: `glowing`, `trail`, `grain: true`, `blended`
+
+## Object-to-Art / Motion Design
+- **Core primitives / Ruby classes**:
+- **Arrangements**: `in_fan`, `in_ring`, `in_grid`, `in_spiral`, `scattered`
+- **Motion / Loop duration**: e.g. `every: 6`
+- **Interactivity / Audio** (if applicable): `when_clicked`, `when_pressed`, `on_beat`, `by(:mouse_x)`, `play "track.mp3"`
+
+## Export Targets
+- [ ] Standalone HTML (`bin/export <%= slug %>`)
+- [ ] Static SVG keyframe (`bin/export <%= slug %> --at 0`)
+- [ ] Recorded video -> MP4 / GIF (`bin/convert-video <file.webm> --mp4 --gif`)
+
+## Notes & Iterations
+- Initial scaffold created.

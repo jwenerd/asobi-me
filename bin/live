@@ -1,0 +1,29 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+ROOT = File.expand_path("..", __dir__)
+
+target = ARGV.shift
+if target.nil? || target == "-h" || target == "--help"
+  puts <<~HELP
+    Usage: bin/live <slug-or-path> [asobi options]
+
+    Examples:
+      bin/live 01-generative-bloom
+      bin/live sketches/01-generative-bloom/sketch.rb --port 5000 --no-open
+  HELP
+  exit(target ? 0 : 1)
+end
+
+path =
+  if File.file?(target)
+    File.expand_path(target)
+  elsif File.file?(File.join(ROOT, "sketches", target, "sketch.rb"))
+    File.join(ROOT, "sketches", target, "sketch.rb")
+  else
+    warn "Sketch not found: #{target}"
+    warn "Run `bundle exec rake list` to see available sketches."
+    exit 1
+  end
+
+exec("bundle", "exec", "asobi", path, *ARGV)

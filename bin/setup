@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+
+REQUIRED_RUBY="$(tr -d '[:space:]' < .ruby-version)"
+
+if [[ -f /opt/homebrew/opt/chruby/share/chruby/chruby.sh ]]; then
+  set +u
+  # shellcheck disable=SC1091
+  source /opt/homebrew/opt/chruby/share/chruby/chruby.sh
+  chruby "$REQUIRED_RUBY"
+  set -u
+fi
+
+echo "Ruby:    $(ruby -v)"
+echo "Bundler: $(bundle -v)"
+bundle install
+echo "asobi:   $(bundle exec asobi --version)"
+
+if command -v ffmpeg >/dev/null 2>&1; then
+  echo "ffmpeg:  $(ffmpeg -version | head -n 1)"
+else
+  echo "ffmpeg:  not found (optional — install with: brew install ffmpeg)"
+fi
+
+echo
+echo "Studio ready! Try:"
+echo "  bundle exec rake list"
+echo "  bin/live 01-generative-bloom"

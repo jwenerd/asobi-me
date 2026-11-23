@@ -1,0 +1,66 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "fileutils"
+require "optparse"
+
+ROOT = File.expand_path("..", __dir__)
+
+options = {
+  mp4: false,
+  gif: false,
+  fps: 24,
+  width: 720,
+  out_dir: File.join(ROOT, "exports", "video")
+}
+
+parser = OptionParser.new do |o|
+  o.banner = "Usage: bin/convert-video <input.webm> [--mp4] [--gif] [--fps 24] [--width 720] [--out DIR]"
+  o.on("--mp4", "Export QuickTime/web-compatible H.264 MP4") { options[:mp4] = true }
+  o.on("--gif", "Export palette-optimized GIF") { options[:gif] = true }
+  o.on("--fps N", Integer, "GIF frame rate (default: 24)") { |v| options[:fps] = v }
+  o.on("--width PX", Integer, "GIF width in pixels (default: 720)") { |v| options[:width] = v }
+  o.on("--out DIR", "Output directory (default: exports/video)") { |v| options[:out_dir] = File.expand_path(v) }
+  o.on("-h", "--help", "Show help") do
+    puts o
+    exit 0
+  end
+end
+
+parser.parse!(ARGV)
+input = ARGV.shift
+if input.nil? || !File.file?(input)
+  warn parser.banner
+  warn "Input file not found: #{input.inspect}" if input
+  exit 1
+end
+
+options[:mp4] = true unless options[:mp4] || options[:gif]
+
+unless system("command -v ffmpeg >/dev/null 2>&1")
+  abort "ffmpeg is required. Install it with: brew install ffmpeg"
+end
+
+FileUtils.mkdir_p(options[:out_dir])
+stem = File.basename(input, File.extname(input))
+
+if options[:mp4]
+  mp4_path = File.join(options[:out_dir], "#{stem}.mp4")
+  cmd = [
+    "ffmpeg", "-y", "-i", input,
+    "-c:v", "libx264", "-pix_fmt", "yuv420p",
+    "-crf", "18", "-movflags", "+faststart",
+    "-c:a", "aac", "-b:a", "192k",
+    mp4_path
+  ]
+  abort "MP4 conversion failed" unless system(*cmd)
+  puts "Wrote #{mp4_path}"
+end
+
+if options[:gif]
+  gif_path = File.join(options[:out_dir], "#{stem}.gif")
+  filter = "fps=#{options[:fps]},scale=#{options[:width]}:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse"
+  cmd = ["ffmpeg", "-y", "-i", input, "-vf", filter, "-loop", "0", gif_path]
+  abort "GIF conversion failed" unless system(*cmd)
+  puts "Wrote #{gif_path}"
+end

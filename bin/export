@@ -1,0 +1,52 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "optparse"
+require_relative "../lib/studio"
+
+options = { at: nil, svg_still: true }
+parser = OptionParser.new do |o|
+  o.banner = "Usage: bin/export [slug-or-path ...] [--at SECONDS] [--no-svg]"
+  o.on("--at SECONDS", Float, "Export an SVG keyframe of motions at SECONDS (default: 0)") do |s|
+    options[:at] = s
+  end
+  o.on("--no-svg", "Skip SVG keyframe export for motion sketches") do
+    options[:svg_still] = false
+  end
+  o.on("-h", "--help", "Show help") do
+    puts o
+    exit 0
+  end
+end
+
+parser.parse!(ARGV)
+
+targets =
+  if ARGV.empty?
+    Dir.glob(File.join(Studio::SKETCHES_DIR, "*", "sketch.rb")).sort
+  else
+    ARGV.map do |arg|
+      if File.file?(arg)
+        File.expand_path(arg)
+      elsif File.file?(File.join(Studio::SKETCHES_DIR, arg, "sketch.rb"))
+        File.join(Studio::SKETCHES_DIR, arg, "sketch.rb")
+      else
+        abort "Sketch not found: #{arg}"
+      end
+    end
+  end
+
+if targets.empty?
+  puts "No sketches found in sketches/."
+  exit 0
+end
+
+targets.each do |sketch_path|
+  result = Studio::Exporter.export(sketch_path, at: options[:at], svg_still: options[:svg_still])
+  puts "[#{result.slug}]"
+  result.outputs.each do |out|
+    rel = out.sub("#{Studio::ROOT}/", "")
+    size_kb = (File.size(out) / 1024.0).round(1)
+    puts "  -> #{rel} (#{size_kb} KB)"
+  end
+end

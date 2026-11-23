@@ -1,0 +1,55 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "erb"
+require "date"
+require "fileutils"
+require "optparse"
+
+ROOT = File.expand_path("..", __dir__)
+VALID_TYPES = %w[generative object interactive].freeze
+
+options = { type: "generative" }
+parser = OptionParser.new do |o|
+  o.banner = "Usage: bin/new-sketch <slug> [--type generative|object|interactive]"
+  o.on("-t", "--type TYPE", VALID_TYPES, "Template type (#{VALID_TYPES.join(', ')})") do |t|
+    options[:type] = t
+  end
+  o.on("-h", "--help", "Show help") do
+    puts o
+    exit 0
+  end
+end
+
+parser.parse!(ARGV)
+raw_slug = ARGV.shift
+if raw_slug.nil? || raw_slug.strip.empty?
+  warn parser.banner
+  exit 1
+end
+
+slug = raw_slug.downcase.gsub(/[^a-z0-9]+/, "-").gsub(/\A-+|-+\z/, "")
+title = slug.split("-").map(&:capitalize).join(" ")
+type = options[:type]
+date = Date.today.iso8601
+
+target_dir = File.join(ROOT, "sketches", slug)
+if Dir.exist?(target_dir)
+  warn "Sketch folder already exists: #{target_dir}"
+  exit 1
+end
+
+FileUtils.mkdir_p(target_dir)
+
+%w[SPEC.md sketch.rb].each do |file|
+  template = File.read(File.join(ROOT, "templates", "#{file}.erb"), encoding: "UTF-8")
+  rendered = ERB.new(template, trim_mode: "-").result(binding)
+  File.write(File.join(target_dir, file), rendered, encoding: "UTF-8")
+end
+
+puts "Created sketches/#{slug}/ (#{type})"
+puts "  Spec:   sketches/#{slug}/SPEC.md"
+puts "  Sketch: sketches/#{slug}/sketch.rb"
+puts
+puts "Next:"
+puts "  bin/live #{slug}"
