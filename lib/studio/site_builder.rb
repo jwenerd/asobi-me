@@ -90,7 +90,7 @@ module Studio
         html_src = File.join(export_dir, "#{entry.slug}.html")
 
         FileUtils.cp(svg_src, File.join(dest_dir, "preview.svg")) if entry.has_svg
-        FileUtils.cp(html_src, File.join(dest_dir, "art.html")) if entry.has_html
+        write_gallery_html(html_src, File.join(dest_dir, "art.html")) if entry.has_html
 
         prev_entry = idx.positive? ? entries[idx - 1] : nil
         next_entry = idx < entries.length - 1 ? entries[idx + 1] : nil
@@ -168,6 +168,19 @@ module Studio
         canvas_height:,
         concept:
       }
+    end
+
+    PLAYER_MOUNT_PATTERN = 'AsobiPlayer.mount(document.getElementById("stage")).update('
+    PLAYER_MOUNT_GALLERY = 'AsobiPlayer.mount(document.getElementById("stage"), { controls: false, keys: false }).update('
+
+    def write_gallery_html(src_path, dest_path)
+      html = File.read(src_path, encoding: "UTF-8")
+      unless html.include?(PLAYER_MOUNT_PATTERN)
+        raise "Expected asobi player mount call not found in #{src_path}"
+      end
+
+      patched = html.sub(PLAYER_MOUNT_PATTERN, PLAYER_MOUNT_GALLERY)
+      File.write(dest_path, patched, encoding: "UTF-8")
     end
 
     def strip_markdown(text)

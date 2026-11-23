@@ -68,7 +68,7 @@ asobi-me/
    - `.svg` for static art (and keyframe `.svg` snapshots of motions via `--at <seconds>`),
    - standalone `.html` for looping/interactive/audio-carrying motions.
    - Unchanged sketches are skipped automatically via per-sketch `SHA256` digests in `exports/<slug>/.export-meta.json` (use `--force` to re-render or `--prune` to remove exports for deleted sketches).
-5. **Build & Publish Gallery** — Run `bin/build-site` (or `bundle exec rake site`) to assemble the newest-first static gallery in `_site/`. Pushing to `main` runs `.github/workflows/pages.yml`, which restores cached `exports/`, renders only changed sketches, builds `_site/`, and deploys to GitHub Pages automatically.
+5. **Build & Publish Gallery** — Run `bin/build-site` (or `bundle exec rake site`) to assemble the newest-first static gallery in `_site/` (published gallery animations mount `AsobiPlayer` with `{ controls: false, keys: false }` to hide the studio `record` / `code` overlay controls while leaving local `bin/live` and `exports/` unchanged). Pushing to `main` runs `.github/workflows/pages.yml`, which restores cached `exports/`, renders only changed sketches, builds `_site/`, and deploys to GitHub Pages automatically.
 6. **Record & Convert Video** — Press **`R`** in the live browser preview to record video (`.webm`), then run `bin/convert-video recording.webm --mp4 --gif` to produce shareable clips under `exports/`.
 
 ---
